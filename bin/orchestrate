@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# SPDX-License-Identifier: GPL-3.0-or-later OR Apache-2.0
+# Copyright (C) 2026 SNAPKITTYWEST / Sovereign Kernel Project
+# CLONE_GATE: sovereign-ruby-kernel::bin::orchestrate
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+
+require 'kernel/symbolic_kernel'
+require 'stages/clojure_trs'
+require 'stages/apl_verify'
+require 'stages/axiom_proof'
+require 'stages/worm_seal'
+require 'swarm/topology'
+require 'swarm/self_synthesis'
+
+puts '╔══════════════════════════════════════════════════════════╗'
+puts '║  SOVEREIGN SYMBOLIC KERNEL                              ║'
+puts '║  Ruby AST → Rewrite → Verify → Self Synthesis           ║'
+puts '║  BOW-Ω-φ-∂-2026                                         ║'
+puts '╚══════════════════════════════════════════════════════════╝'
+
+kernel = Sovereign::Kernel::SymbolicKernel.new
+
+puts "\n── Stage 1: Clojure TRS ──"
+clj = Sovereign::Stages::ClojureTRS.run(kernel)
+puts "  TRS  = #{clj[:trs]}"
+puts "  Norm = #{clj[:norm]}"
+
+puts "\n── Stage 2: APL Verify ──"
+apl = Sovereign::Stages::APLVerify.run(kernel)
+apl[:per_symbol].each { |sym, val| puts "  #{sym.to_s.ljust(8)} = #{val}" }
+puts "  Match: #{apl[:match]}"
+
+puts "\n── Stage 3: AXIOM Proof ──"
+axiom = Sovereign::Stages::AxiomProof.run(kernel)
+puts "  Verified: #{axiom[:verified]}"
+
+puts "\n── Stage 4: WORM Seal ──"
+seal = Sovereign::Stages::WormSeal.run(kernel, clj_result: clj, apl_result: apl, axiom_result: axiom)
+puts "  Seal:  #{seal[:seal][0..31]}"
+puts "         #{seal[:seal][32..]}"
+puts "  Chain: #{seal[:chain_valid]}"
+puts "  State: #{seal[:governance_state]}"
+
+puts "\n── Self Synthesis ──"
+self_code = Sovereign::Swarm::SelfSynthesis.emit_module(kernel)
+puts self_code[0..500]
+puts "  ... (#{self_code.length} chars total)"
+
+puts "\n── Swarm Topology ──"
+topo = Sovereign::Swarm::Topology.sovereign_pipeline
+puts "  Agents: #{topo.agents.size}"
+puts "  Edges:  #{topo.edges.size}"
+puts topo.to_dot
+
+puts "\n  Ruby → AST → Rewrite → Self. The kernel synthesizes itself."
